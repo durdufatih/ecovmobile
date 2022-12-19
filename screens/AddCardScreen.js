@@ -1,6 +1,8 @@
 import { useNavigation } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
+import { ColorPicker } from "react-native-btr";
+
 import {
   KeyboardAvoidingView,
   SafeAreaView,
@@ -26,13 +28,18 @@ function AddCardScreen() {
   const [web, setWeb] = useState("");
   const [address, setAdress] = useState("");
 
+  function setColor(color) {
+    setFirstBanner(color);
+  }
   const createCard = () => {
     db.collection("/cards")
       .doc()
       .set({
         userId: auth.currentUser.email,
         name: name,
+        firstBanner:firstBanner,
         title: title,
+        secondBanner:secondBanner,
         gsm: gsm,
         phone: phone,
         email: email,
@@ -40,9 +47,8 @@ function AddCardScreen() {
         address: address,
       })
       .then(() => {
-        navigation.replace("Home")
+        navigation.replace("Home");
         console.log("Data set.");
-
       })
       .catch((error) => console.log(error));
   };
@@ -62,6 +68,10 @@ function AddCardScreen() {
               />
             </View>
             <View style={styles.inputView}>
+              <Text>Name Background Color:</Text>
+              <ColorPicker selectedColor={firstBanner} onSelect={(color)=>setFirstBanner(color)} />
+            </View>
+            <View style={styles.inputView}>
               <Text>Title:</Text>
               <TextInput
                 placeholder="Title"
@@ -69,6 +79,10 @@ function AddCardScreen() {
                 onChangeText={(text) => setTitle(text)}
                 style={styles.input}
               />
+            </View>
+            <View style={styles.inputView}>
+              <Text>Title Background Color:</Text>
+              <ColorPicker selectedColor={secondBanner} onSelect={(color)=>setSecondBanner(color)} />
             </View>
 
             <View style={styles.inputView}>
