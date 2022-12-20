@@ -2,8 +2,12 @@ import { useNavigation } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
 import { ColorPicker } from "react-native-btr";
+import * as ImagePicker from "expo-image-picker";
+import uuid from "react-native-uuid";
 
 import {
+  Button,
+  Image,
   KeyboardAvoidingView,
   SafeAreaView,
   ScrollView,
@@ -13,7 +17,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { auth, db } from "../firebase";
+import { auth, db, storage } from "../firebase";
 
 function AddCardScreen() {
   const navigation = useNavigation();
@@ -27,19 +31,47 @@ function AddCardScreen() {
   const [email, setEmail] = useState("");
   const [web, setWeb] = useState("");
   const [address, setAdress] = useState("");
+  const [image, setImage] = useState("");
 
-  function setColor(color) {
-    setFirstBanner(color);
-  }
-  const createCard = () => {
+  const pickImage = async () => {
+    // No permissions request is necessary for launching the image library
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    console.log(result);
+
+    if (!result.canceled) {
+      const response = await fetch(result.assets[0].uri);
+      const blob = await response.blob();
+      const name = uuid.v4();
+      var ref = storage.ref("img/" + name + ".jpeg");
+      const task = ref.put(blob);
+
+      task.on("state_changed", (taskSnapshot) => {
+        console.log(`${taskSnapshot.bytesTransferred} transferred 
+  out of ${taskSnapshot.ref}`);
+        setImage(taskSnapshot.ref);
+      });
+      task.then(() => {
+        console.log("Image uploaded to the bucket!");
+      });
+    }
+  };
+
+  
+  const createCard = async () => {
+
     db.collection("/cards")
       .doc()
       .set({
         userId: auth.currentUser.email,
         name: name,
-        firstBanner:firstBanner,
+        firstBanner: firstBanner,
         title: title,
-        secondBanner:secondBanner,
+        secondBanner: secondBanner,
         gsm: gsm,
         phone: phone,
         email: email,
@@ -59,6 +91,14 @@ function AddCardScreen() {
         <KeyboardAvoidingView style={styles.container} behavior="padding">
           <View style={styles.inputContainer}>
             <View style={styles.inputView}>
+              <Text>Background Image:</Text>
+              <Button
+                title="Pick an image"
+                onPress={pickImage}
+              />
+              {image && <Image source={{ uri: image }} />}
+            </View>
+            <View style={styles.inputView}>
               <Text>Name:</Text>
               <TextInput
                 placeholder="Name"
@@ -69,7 +109,10 @@ function AddCardScreen() {
             </View>
             <View style={styles.inputView}>
               <Text>Name Background Color:</Text>
-              <ColorPicker selectedColor={firstBanner} onSelect={(color)=>setFirstBanner(color)} />
+              <ColorPicker
+                selectedColor={firstBanner}
+                onSelect={(color) => setFirstBanner(color)}
+              />
             </View>
             <View style={styles.inputView}>
               <Text>Title:</Text>
@@ -82,7 +125,10 @@ function AddCardScreen() {
             </View>
             <View style={styles.inputView}>
               <Text>Title Background Color:</Text>
-              <ColorPicker selectedColor={secondBanner} onSelect={(color)=>setSecondBanner(color)} />
+              <ColorPicker
+                selectedColor={secondBanner}
+                onSelect={(color) => setSecondBanner(color)}
+              />
             </View>
 
             <View style={styles.inputView}>
